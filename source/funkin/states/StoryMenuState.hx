@@ -16,6 +16,7 @@ import funkin.states.*;
 import funkin.states.substates.*;
 import funkin.objects.*;
 import funkin.backend.Difficulty;
+import funkin.backend.FallbackState;
 
 class StoryMenuState extends MusicBeatState
 {
@@ -55,6 +56,15 @@ class StoryMenuState extends MusicBeatState
 		
 		PlayState.isStoryMode = true;
 		WeekData.reloadWeekFiles(true);
+		
+		if (WeekData.weeksList.length == 0)
+		{
+			CoolUtil.setTransSkip(true, false);
+			persistentUpdate = false;
+			FlxG.switchState(() -> new FallbackState('Cannot load Story Mode as there are no weeks loaded.', () -> FlxG.switchState(MainMenuState.new)));
+			return;
+		}
+		
 		if (curWeek >= WeekData.weeksList.length) curWeek = 0;
 		persistentUpdate = persistentDraw = true;
 		
@@ -190,6 +200,8 @@ class StoryMenuState extends MusicBeatState
 	
 	override function update(elapsed:Float)
 	{
+		if (WeekData.weeksList.length == 0) return;
+		
 		scriptGroup.call('onUpdate', [elapsed]);
 		
 		// scoreText.setFormat('VCR OSD Mono', 32);
@@ -404,28 +416,12 @@ class StoryMenuState extends MusicBeatState
 		PlayState.storyMeta.curWeek = curWeek;
 		
 		Difficulty.reset();
-		var diffStr:String = WeekData.getCurrentWeek().difficulties;
-		if (diffStr != null) diffStr = diffStr.trim(); // Fuck you HTML5
+		var diffs:Array<String> = WeekData.getCurrentWeek().difficulties;
 		difficultySelectors.visible = unlocked;
 		
-		if (diffStr != null && diffStr.length > 0)
+		if (diffs != null && diffs.length > 0)
 		{
-			var diffs:Array<String> = diffStr.split(',');
-			var i:Int = diffs.length - 1;
-			while (i > 0)
-			{
-				if (diffs[i] != null)
-				{
-					diffs[i] = diffs[i].trim();
-					if (diffs[i].length < 1) diffs.remove(diffs[i]);
-				}
-				--i;
-			}
-			
-			if (diffs.length > 0 && diffs[0].length > 0)
-			{
-				Difficulty.difficulties = diffs;
-			}
+			Difficulty.difficulties = diffs;
 		}
 		
 		if (Difficulty.difficulties.contains(Difficulty.defaultDifficulty))
