@@ -956,46 +956,27 @@ class PlayState extends MusicBeatState
 					popUpScore(note);
 				}
 			});
-			strums.onNoteMiss.add((note, field) -> {
-				if (note.canMiss || !field.playerControls) return;
-
-				inline function actualMiss()
-				{
-					if (combo > 5 && gf != null && gf.animOffsets.exists('sad')) gf.playAnim('sad');
-					combo = 0;
-					audio.miss();
-					
-					if (instakillOnMiss) doDeathCheck(true);
-
-					songMisses++;
-					if (!practiceMode) songScore -= 10;
-					
-					totalPlayed++;
-					RecalculateRating(true);
-				}
-				
-				
-				if(ClientPrefs.guitarHeroSustains)
-				{
-					if(!note.isSustainNote)
-						actualMiss();
-				}
-				else 
-					actualMiss();
-
-			});
-			strums.onMissPress.add((key) -> {
+			
+			inline function actualMiss()
+			{
+				if (combo > 5 && gf != null && gf.animOffsets.exists('sad')) gf.playAnimForDuration('sad', 1, true);
+				combo = 0;
 				audio.miss();
 				
 				if (instakillOnMiss) doDeathCheck(true);
 				
-				if (combo > 5 && gf != null && gf.animOffsets.exists('sad')) gf.playAnim('sad');
-				combo = 0;
-				
+				songMisses++;
 				if (!practiceMode) songScore -= 10;
-				if (!endingSong) songMisses++;
+				
 				totalPlayed++;
-				RecalculateRating();
+				RecalculateRating(true);
+			}
+			
+			strums.onNoteMiss.add((note, field) -> {
+				if (!note.canMiss && field.playerControls && !note.blockHit) actualMiss();
+			});
+			strums.onMissPress.add((key) -> {
+				actualMiss();
 			});
 			
 			strums.showRatings = true;
@@ -1250,7 +1231,8 @@ class PlayState extends MusicBeatState
 		
 		final songName:String = Paths.sanitize(SONG.song);
 		
-		var file:String = Paths.json('$songName/data/events');
+		var file:String = Paths.json('$songName/charts/events');
+		if (!FunkinAssets.exists(file)) file = Paths.json('$songName/data/events');
 		
 		inline function makeEv(time:Float, ev:String, v1:String, v2:String)
 		{
